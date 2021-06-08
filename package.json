@@ -1,7 +1,7 @@
 {
-  "name": "chrome-extension-ts-starter",
+  "name": "gb-mock-api-dumper",
   "version": "1.0.0",
-  "description": "Chrome Extension starter built with TypeScript and Parcel",
+  "description": "GB Mock API Dumper",
   "main": "index.js",
   "scripts": {
     "build:bg": "parcel build src/background/index.ts -d dist/background",
@@ -10,7 +10,7 @@
     "build:popup": "parcel build src/popup/index.html -d dist/popup --public-url ./",
     "build:devtools": "parcel build src/devtools/index.html -d dist/devtools --public-url ./",
     "build:devtools:app": "parcel build src/devtools/app/index.html -d dist/devtools/app --public-url ./",
-    "build": "npm run build:bg && npm run build:content && npm run build:options && npm run build:popup && npm run build:devtools && npm run build:devtools:app",
+    "build": "npm run build:bg",
     "clean": "rimraf dist",
     "copy:static": "copyfiles manifest.json assets/**/* dist",
     "dist": "npm run clean && npm run build && npm run copy:static",
