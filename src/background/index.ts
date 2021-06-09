@@ -8,33 +8,79 @@ import WebRequestBodyDetails = chrome.webRequest.WebRequestBodyDetails;
         ],
         types: ["xmlhttprequest"]
     };
-    const extraInfoSpecBefore = [
-        "blocking", "requestBody"
-    ];
+
     const extraInfoSpecOnCompleted = [
         "extraHeaders"
     ];
     const tabStorage: any = {};
     const uri2RequestId: any = {};
 
+
     chrome.webRequest.onBeforeRequest.addListener((details) => {
-        const {tabId, requestId, requestBody} = details;
+        const {tabId, requestId, requestBody, method} = details;
         if (!tabStorage.hasOwnProperty(tabId)) {
             return;
         }
+        console.log('sssss', details)
         const urlID = requestIdByUri(details);
         const rBody = parseRequestBody(details);
         uri2RequestId[urlID] = requestId;
 
         tabStorage[tabId].requests[requestId] = {
             requestId: requestId,
+            method: method,
             fullUrl: urlID,
             url: details.url,
             startTime: details.timeStamp,
             status: 'pending',
             reqBody: rBody
         };
-    }, networkFilters, extraInfoSpecBefore);
+    }, networkFilters, ["blocking", "requestBody"]);
+
+    // Read request Headers
+    chrome.webRequest.onSendHeaders.addListener((details) => {
+        const {tabId, requestId, requestHeaders} = details;
+        if (!tabStorage.hasOwnProperty(tabId) || !tabStorage[tabId].requests.hasOwnProperty(requestId)) {
+            return;
+        }
+        const request = tabStorage[tabId].requests[requestId];
+        Object.assign(request, {
+            endTime: details.timeStamp,
+            requestHeaders: requestHeaders,
+            status: 'pending'
+        });
+
+    }, networkFilters, ['requestHeaders']);
+
+
+
+    // Read request Headers
+    chrome.webRequest.onResponseStarted.addListener((details) => {
+        const {tabId, requestId, responseHeaders} = details;
+        if (!tabStorage.hasOwnProperty(tabId) || !tabStorage[tabId].requests.hasOwnProperty(requestId)) {
+            return;
+        }
+
+        const request = tabStorage[tabId].requests[requestId];
+        Object.assign(request, {
+            endTime: details.timeStamp,
+            responseHeaders: responseHeaders,
+            status: 'pending'
+        });
+
+    }, networkFilters, ["responseHeaders"]);
+
+    // Read request Headers
+    chrome.webRequest.onAuthRequired.addListener((details) => {
+        const {tabId, requestId} = details;
+        if (!tabStorage.hasOwnProperty(tabId) || !tabStorage[tabId].requests.hasOwnProperty(requestId)) {
+            return;
+        }
+
+        console.log('onAuthRequired @#$ => ', details)
+
+
+    }, networkFilters, ["responseHeaders"]);
 
 
     chrome.webRequest.onCompleted.addListener((details) => {
@@ -48,7 +94,7 @@ import WebRequestBodyDetails = chrome.webRequest.WebRequestBodyDetails;
             requestDuration: details.timeStamp - request.startTime,
             status: 'complete'
         });
-    }, networkFilters, extraInfoSpecOnCompleted);
+    }, networkFilters, ['extraHeaders']);
 
     chrome.tabs.onActivated.addListener((tab) => {
         const tabId = tab ? tab.tabId : chrome.tabs.TAB_ID_NONE;
@@ -84,18 +130,13 @@ import WebRequestBodyDetails = chrome.webRequest.WebRequestBodyDetails;
             }, function (response) {
                 const id = uri2RequestId[params.response.url];
                 const request = tabStorage[debuggeeId.tabId].requests[id];
+                const payload: any = /*response.base64Encoded ? atob(response.body) : */ response.body;
 
-
-                let payload: any = response.body;
-                if (response.base64Encoded) {
-                    payload = atob((response.body)
-                }
 
                 Object.assign(request, {
-                    response: JSON.parse(payload)
+                    responseData: JSON.parse(payload)
                 });
                 console.log('=========>>>>> ', request);
-                // you get the response body here!
             });
         }
     }
