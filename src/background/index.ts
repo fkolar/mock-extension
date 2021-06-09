@@ -136,7 +136,7 @@ import WebRequestBodyDetails = chrome.webRequest.WebRequestBodyDetails;
                 Object.assign(request, {
                     responseData: JSON.parse(payload)
                 });
-                console.log('=========>>>>> ', request);
+                console.log('===SAVING TO DB ... ======>>>>> ', request);
             });
         }
     }
